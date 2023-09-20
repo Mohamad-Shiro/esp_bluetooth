@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <BluetoothSerial.h>
+#include <PubSubClient.h>
 #include <WiFi.h>
 
 #define USE_PIN
@@ -41,10 +42,12 @@ void setup() {
     // connect to wifi
     // if connection failed, try again
     while (true) {
-        listNetworks();
-        getWiFiCredits();
-        // connect to network
-        // if connected, break
+        if (SerialBT.connected()) {
+            listNetworks();
+            getWiFiCredits();
+            // connect to network
+            // if connected, break
+        }
     }
 }
 
@@ -66,6 +69,46 @@ String takeInput(int device) {
 }
 
 void getWiFiCredits() {
+    int state = 0;
+    while (state != 4) {
+        switch (state) {
+            case 0:
+                SerialBT.println("Enter WIFI name: ");
+                state = 1;
+                break;
+
+            case 1:
+                while (true) {
+                    if (SerialBT.available()) {
+                        ssid = SerialBT.readString();
+                        ssid.trim();
+                        state = 2;
+                        break;
+                    }
+                }
+                break;
+
+            case 2:
+                SerialBT.println("Enter WIFI password: ");
+                state = 3;
+                break;
+            
+            case 3:
+                while (true) {
+                    if (SerialBT.available()) {
+                        password = SerialBT.readString();
+                        password.trim();
+                        state = 4;
+                        break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    Serial.printf("ssid: %s, password: %s\n", ssid.c_str(), password.c_str());
 }
 
 void listNetworks() {
