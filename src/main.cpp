@@ -25,6 +25,7 @@ BluetoothSerial SerialBT;
 String takeInput(int);
 void getWiFiCredits();
 void listNetworks();
+bool connectToNetwork(int timeOut = 5000);
 
 void setup() {
     Serial.begin(115200);
@@ -45,13 +46,22 @@ void setup() {
         if (SerialBT.connected()) {
             listNetworks();
             getWiFiCredits();
-            // connect to network
-            // if connected, break
+            SerialBT.end();
+            if (connectToNetwork())
+                break;
+            else {
+                SerialBT.begin(device_name);
+                Serial.println("Failed to connect. try again...");
+                delay(400);
+            }
         }
     }
 }
 
 void loop() {
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("connected to %s.\n", WiFi.SSID().c_str());
+    }
     delay(2000);
 }
 
@@ -92,7 +102,7 @@ void getWiFiCredits() {
                 SerialBT.println("Enter WIFI password: ");
                 state = 3;
                 break;
-            
+
             case 3:
                 while (true) {
                     if (SerialBT.available()) {
@@ -119,5 +129,24 @@ void listNetworks() {
     for (int i = 0; i < numNetworks; ++i) {
         SerialBT.printf("%d: %s (%d)  %s\n", i + 1, WiFi.SSID(i).c_str(),
                         WiFi.RSSI(i), WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "( )" : "(*)");
+    }
+}
+
+bool connectToNetwork(int timeOut) {
+    WiFi.mode(WIFI_STA);
+    Serial.printf("Connecting to: %s", ssid.c_str());
+    long initTime = millis();
+    long lastTime = millis();
+    while (WiFi.status() != WL_CONNECTED && (lastTime - initTime) < timeOut) {
+        WiFi.begin(ssid, password);
+        lastTime = millis();
+        Serial.print(".");
+        delay(200);
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("Connected to Wi-Fi with local IP: %s\n", WiFi.localIP().toString().c_str());
+        return 1;
+    } else {
+        return 0;
     }
 }
