@@ -43,18 +43,19 @@ void setup() {
     // connect to wifi
     // if connection failed, try again
     while (true) {
+        Serial.println("Waiting for connection..");
         if (SerialBT.connected()) {
-            listNetworks();
-            getWiFiCredits();
-            SerialBT.end();
-            if (connectToNetwork())
-                break;
-            else {
-                SerialBT.begin(device_name);
-                Serial.println("Failed to connect. try again...");
-                delay(400);
+            Serial.println("Waiting for input..");
+            if (SerialBT.available()) {
+                String msg = takeInput(1);
+                int i = msg.indexOf('*');
+                ssid = msg.substring(0, i);
+                password = msg.substring(i+1);
+                Serial.printf("ssid: %s, password: %s\n", ssid.c_str(), password.c_str());
+                connectToNetwork();
             }
         }
+        delay(1000);
     }
 }
 
